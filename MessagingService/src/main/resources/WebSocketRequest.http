@@ -1,0 +1,29 @@
+WEBSOCKET ws://127.0.0.1:8080/ws/1
+Content-Type: application/json // used only for IDE highlighting.
+// Highlighting is applied for each message independently.
+
+{
+  "id" : "asdasdsad",
+  "text": "Hello",
+  "sentTime": 1,
+  "senderId": 1,
+  "conversationId": 1
+}
+=== wait-for-server
+{
+  "id" : "asdasdsadasd",
+  "text": "How Are you",
+  "sentTime": 1,
+  "senderId": 1,
+  "conversationId": 1
+}
+===
+{
+  "id" : "asda123sdsadasd",
+  "text": "Respond!!!!",
+  "sentTime": 1,
+  "senderId": 1,
+  "conversationId": 1
+}
+
+###
