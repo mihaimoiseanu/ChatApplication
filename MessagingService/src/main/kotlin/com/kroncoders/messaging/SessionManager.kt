@@ -1,8 +1,8 @@
 package com.kroncoders.messaging
 
 import com.kroncoders.models.Message
-import com.kroncoders.persistance.MessagesRepository
-import com.kroncoders.persistance.UsersConversationsRepository
+import com.kroncoders.service.MessagesService
+import com.kroncoders.service.UserService
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
@@ -21,8 +21,8 @@ val sessionModule = module {
 
 class SessionManager(
     private val json: Json,
-    private val messagesRepository: MessagesRepository,
-    private val usersConversationsRepository: UsersConversationsRepository
+    private val messagesService: MessagesService,
+    private val userService: UserService
 ) {
 
     private val sessionManagerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -35,8 +35,8 @@ class SessionManager(
     fun onMessages(message: String) {
         sessionManagerScope.launch {
             val incomingMessage: Message = json.decodeFromString(message)
-            val savedMessage = messagesRepository.create(incomingMessage).let { messagesRepository.read(it) }
-            val usersInConversation = usersConversationsRepository.readUsersForConversation(savedMessage.conversationId)
+            val savedMessage = messagesService.insertMessage(message = incomingMessage)
+            val usersInConversation = userService.getUsersIdsForConversation(savedMessage.conversationId)
             val savedMessageJson = json.encodeToString(savedMessage)
             usersInConversation.forEach { userId ->
                 clients[userId]?.send(savedMessageJson)

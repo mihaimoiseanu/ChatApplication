@@ -3,6 +3,10 @@ package com.kroncoders.service
 import com.kroncoders.models.Conversation
 import com.kroncoders.persistance.ConversationRepository
 import com.kroncoders.persistance.UsersConversationsRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 class ConversationService(
     private val conversationRepository: ConversationRepository,
@@ -21,6 +25,15 @@ class ConversationService(
     suspend fun retrieveConversation(conversationId: Long): Conversation {
         val users = usersConversationsRepository.readUsersForConversation(conversationId)
         return conversationRepository.read(conversationId).copy(users = users)
+    }
+
+    suspend fun getUserConversations(userId: Long): List<Conversation> = coroutineScope {
+        conversationRepository.getUserConversations(userId).map { conversation ->
+            async(Dispatchers.IO) {
+                val conversationUsers = usersConversationsRepository.readUsersForConversation(conversation.id!!)
+                conversation.copy(users = conversationUsers)
+            }
+        }.awaitAll()
     }
 
     suspend fun updateConversation(conversationId: Long, conversation: Conversation): Conversation {

@@ -1,6 +1,6 @@
 package com.kroncoders.routing
 
-import com.kroncoders.persistance.MessagesRepository
+import com.kroncoders.service.MessagesService
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
@@ -9,12 +9,12 @@ import org.koin.ktor.ext.inject
 
 fun Route.messagesRouting() {
 
-    val messagesRepository by inject<MessagesRepository>()
+    val messagesService by inject<MessagesService>()
 
     get("conversations/{conversationId}/messages") {
         val conversationId = call.parameters["conversationId"]?.toLong()
             ?: throw IllegalArgumentException("Conversation Id is missing")
-        val messages = messagesRepository.readMessagesForConversation(conversationId = conversationId)
+        val messages = messagesService.getMessagesForConversation(conversationId = conversationId)
         call.respond(HttpStatusCode.OK, messages)
     }
 
