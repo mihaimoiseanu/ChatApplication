@@ -3,7 +3,7 @@ package com.kroncoders.android.ui.screens.conversations.edit
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,7 +30,7 @@ fun ConversationEditScreen(viewModel: ConversationEditViewModel = hiltViewModel(
                 title = { Text("Edit Conversation") },
                 navigationIcon = {
                     IconButton(onClick = viewModel::goBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+                        Icon(imageVector = Icons.Default.ArrowBackIosNew, contentDescription = null)
                     }
                 }
             )

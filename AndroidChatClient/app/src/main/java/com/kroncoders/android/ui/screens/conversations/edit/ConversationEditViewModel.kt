@@ -28,8 +28,8 @@ data class ConversationEditScreenModel(
 class ConversationEditViewModel
 @Inject constructor(
     private val chatRepository: ChatRepository,
-    private val savedStateHandle: SavedStateHandle,
-    private val navigationManager: NavigationManager
+    private val navigationManager: NavigationManager,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val screenModel: MutableStateFlow<ConversationEditScreenModel> =
@@ -59,7 +59,10 @@ class ConversationEditViewModel
                     lastUpdateTime = System.currentTimeMillis(),
                     name = screenModel.value.name
                 )
-                chatRepository.updateConversation(conversation)
+                chatRepository.updateConversation(
+                    screenModel.value.id,
+                    conversation
+                )
             },
             onError = { error -> screenModel.update { it.copy(error = error) } },
             onSuccess = { navigationManager.navigateBack() },

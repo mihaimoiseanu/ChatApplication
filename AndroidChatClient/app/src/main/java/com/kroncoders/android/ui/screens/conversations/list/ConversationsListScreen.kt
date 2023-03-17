@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -17,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -34,7 +36,7 @@ fun ConversationsListScreen(viewModel: ConversationsListViewModel = hiltViewMode
                 actions = {
                     IconButton(onClick = viewModel::logout) {
                         Icon(
-                            painterResource(id = android.R.drawable.ic_lock_power_off),
+                            imageVector = Icons.Default.Logout,
                             contentDescription = null
                         )
                     }
@@ -44,7 +46,7 @@ fun ConversationsListScreen(viewModel: ConversationsListViewModel = hiltViewMode
         floatingActionButton = {
             FloatingActionButton(onClick = viewModel::goToCreateConversation) {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_menu_add),
+                    imageVector = Icons.Default.Chat,
                     contentDescription = null
                 )
             }

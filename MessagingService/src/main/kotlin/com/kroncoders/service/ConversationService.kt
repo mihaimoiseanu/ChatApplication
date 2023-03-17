@@ -14,6 +14,11 @@ class ConversationService(
 ) {
 
     suspend fun createConversation(conversation: Conversation): Conversation {
+        if (conversation.users.isEmpty()) throw IllegalStateException("There's need to be at least one user")
+
+        val existingConversation = checkIfConversationAlreadyExists(conversation)
+        if (existingConversation != null) return existingConversation
+
         val conversationId = conversationRepository.create(conversation.name)
         conversation.users.forEach { user ->
             usersConversationsRepository.create(user, conversationId)
@@ -21,6 +26,27 @@ class ConversationService(
         val userForConversation = usersConversationsRepository.readUsersForConversation(conversationId)
         return conversationRepository.read(conversationId).copy(users = userForConversation)
     }
+
+    private suspend fun checkIfConversationAlreadyExists(conversation: Conversation): Conversation? {
+        if (conversation.users.size > 2) return null // if we have more than 2 users create a new conversation
+        if (conversation.users.size == 1) {
+            val user = conversation.users.first()
+            val userConversations = getUserConversations(user)
+            return userConversations.first { it.users equalsIgnoreOrder listOf(user) }
+        }
+        val userInConversation = conversation.users
+        val (firstUserConversations, secondUserConversations) = userInConversation.map { getUserConversations(it) }
+        val conversationForFirstUser =
+            firstUserConversations.firstOrNull { it.users equalsIgnoreOrder userInConversation }
+        val conversationForSecondUser =
+            secondUserConversations.firstOrNull { it.users equalsIgnoreOrder userInConversation }
+        if (conversationForFirstUser == null && conversationForSecondUser == null) return null
+        if (conversationForFirstUser == conversationForSecondUser) return conversationForFirstUser
+        //TODO handle if one user exited the conversation
+        return null
+    }
+
+    infix fun <T> List<T>.equalsIgnoreOrder(other: List<T>) = this.size == other.size && this.toSet() == other.toSet()
 
     suspend fun retrieveConversation(conversationId: Long): Conversation {
         val users = usersConversationsRepository.readUsersForConversation(conversationId)

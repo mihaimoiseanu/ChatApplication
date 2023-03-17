@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 data class ConversationCreateScreenModel(
@@ -18,7 +19,8 @@ data class ConversationCreateScreenModel(
     val users: List<User> = emptyList(),
     val selectedUsers: List<User> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String = ""
+    val error: String = "",
+    val multiSelect: Boolean = false,
 )
 
 @HiltViewModel
@@ -34,28 +36,44 @@ class ConversationCreateViewModel
         getUsers()
     }
 
-    fun getUsers() {
-        viewModelScope.launch(Dispatchers.IO) { chatRepository.syncUsers() }
+    private fun getUsers() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                chatRepository.syncUsers()
+            } catch (exception: Exception) {
+                Timber.e(exception)
+            }
+        }
         chatRepository
             .getAllUsers()
             .onEach { users ->
                 val currentUser = chatRepository.currentUserId()
-                screenModel.update { it.copy(users = users.filter { it.id != currentUser }) }
+                screenModel.update { it.copy(users = users.filter { user -> user.id != currentUser }) }
             }
             .flowOn(Dispatchers.IO)
             .launchIn(viewModelScope)
     }
 
-    fun onNameChanged(value: String) {
-        screenModel.update { it.copy(name = value) }
+    fun cancelMultiSelect() {
+        screenModel.update { it.copy(selectedUsers = emptyList(), multiSelect = false) }
     }
 
-    fun onUserCheckedChanged(isChecked: Boolean, user: User) {
-        val users = screenModel
-            .value
-            .selectedUsers
-            .let { if (isChecked) it + user else it - user }
-        screenModel.update { it.copy(selectedUsers = users) }
+    fun onUserClicked(user: User) {
+        if (screenModel.value.multiSelect) {
+            onUserLongClicked(user)
+        } else {
+            screenModel.update { it.copy(selectedUsers = listOf(user)) }
+            createChat()
+        }
+    }
+
+    fun onUserLongClicked(user: User) {
+        val currentSelectedUsers = screenModel.value.selectedUsers
+        val selectedUsers = if (currentSelectedUsers.contains(user))
+            currentSelectedUsers - user
+        else
+            currentSelectedUsers + user
+        screenModel.update { it.copy(multiSelect = true, selectedUsers = selectedUsers) }
     }
 
     fun createChat() {
@@ -71,6 +89,10 @@ class ConversationCreateViewModel
             onLoading = { isLoading -> screenModel.update { it.copy(isLoading = isLoading) } },
             onSuccess = { navigationManager.navigateBack() }
         )
+    }
+
+    fun clearError() {
+        screenModel.update { it.copy(error = "") }
     }
 
     fun navigateBack() {

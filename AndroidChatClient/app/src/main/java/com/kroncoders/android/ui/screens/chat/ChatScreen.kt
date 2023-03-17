@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
@@ -47,6 +48,11 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel()) {
                         imageVector = Icons.Default.Edit,
                         contentDescription = null
                     )
+                }
+            },
+            navigationIcon = {
+                IconButton(onClick = viewModel::onBackClick) {
+                    Icon(imageVector = Icons.Default.ArrowBackIosNew, contentDescription = null)
                 }
             }
         )

@@ -126,9 +126,9 @@ class OfflineFirstChatRepository(
         }
     }
 
-    override suspend fun updateConversation(conversation: Conversation) {
+    override suspend fun updateConversation(conversationId: Long, conversation: Conversation) {
         val networkRequest = conversation.toNetworkModel()
-        val networkResponse = chatRestApi.updateConversation(networkRequest)
+        val networkResponse = chatRestApi.updateConversation(conversationId, networkRequest)
         syncConversation(networkResponse)
     }
 
@@ -172,7 +172,7 @@ class OfflineFirstChatRepository(
             .getMessagesForConversation(conversationId)
             .map(NetworkMessage::toEntity)
             .toTypedArray()
-        if(messageEntities.isEmpty()) return
+        if (messageEntities.isEmpty()) return
         messagesDao.insertMessage(*messageEntities)
         val lastUpdateTime = messageEntities.maxOf { it.sentTime }
         conversationDao.updateLastUpdateTime(conversationId, lastUpdateTime)

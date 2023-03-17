@@ -25,5 +25,5 @@ interface ChatRepository {
     suspend fun syncConversations()
     suspend fun syncMessagesForConversation(conversationId: Long)
     suspend fun syncUsers()
-    suspend fun updateConversation(conversation: Conversation)
+    suspend fun updateConversation(conversationId: Long, conversation: Conversation)
 }

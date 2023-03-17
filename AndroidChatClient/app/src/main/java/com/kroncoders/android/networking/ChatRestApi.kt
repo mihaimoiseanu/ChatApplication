@@ -27,6 +27,9 @@ interface ChatRestApi {
     @GET("conversations/{conversationId}/messages")
     suspend fun getMessagesForConversation(@Path("conversationId") conversationId: Long): List<NetworkMessage>
 
-    @PUT("conversations/{conversationId")
-    suspend fun updateConversation(conversation: NetworkConversation): NetworkConversation
+    @PUT("conversations/{conversationId}")
+    suspend fun updateConversation(
+        @Path("conversationId") conversationId: Long,
+        conversation: NetworkConversation
+    ): NetworkConversation
 }
