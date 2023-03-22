@@ -1,6 +1,6 @@
 package com.kroncoders.android.networking
 
-import com.kroncoders.android.networking.models.NetworkMessage
+import com.kroncoders.android.networking.models.*
 import com.kroncoders.android.storage.datastore.ChatDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,17 +38,38 @@ class MessagingClient @Inject constructor(
         }
     }
 
-    fun sendMessage(networkMessage: NetworkMessage) {
+    fun sendTextMessage(networkMessage: NetworkMessage) {
         val messageJson = json.encodeToString(networkMessage)
-        webSocket?.send(messageJson)
+        val webSocketFrame = WebSocketFrame(WebSocketFrameType.Message, messageJson)
+        val textFrame = json.encodeToString(webSocketFrame)
+        webSocket?.send(textFrame)
     }
 
     private inner class MessagingSocketListener : WebSocketListener() {
         override fun onMessage(webSocket: WebSocket, text: String) {
             messagingScope.launch {
-                val networkMessage: NetworkMessage = json.decodeFromString(text)
-                messagesFlow.emit(networkMessage)
+                val webSocketFrame: WebSocketFrame = json.decodeFromString(text)
+                when (webSocketFrame.type) {
+                    WebSocketFrameType.Message -> handleMessageFrame(webSocketFrame.content)
+                    WebSocketFrameType.WebRTC -> handleWebRTCFrame(webSocketFrame.content)
+                    WebSocketFrameType.PresenceIndicator -> TODO()
+                }
+
             }
+        }
+    }
+
+    private suspend fun handleMessageFrame(message: String) {
+        val networkMessage: NetworkMessage = json.decodeFromString(message)
+        messagesFlow.emit(networkMessage)
+    }
+
+    private suspend fun handleWebRTCFrame(message: String) {
+        val webRTCMessage: WebRTCMessage = json.decodeFromString(message)
+        when (webRTCMessage.messageType) {
+            WebRTCMessageType.Offer -> TODO()
+            WebRTCMessageType.Answer -> TODO()
+            WebRTCMessageType.ICE -> TODO()
         }
     }
 }

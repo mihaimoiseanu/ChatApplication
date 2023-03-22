@@ -180,7 +180,7 @@ class OfflineFirstChatRepository(
 
     override suspend fun sendMessage(message: Message) {
         messagesDao.insertMessage(message.toEntity(false))
-        messagingClient.sendMessage(message.toNetworkModel())
+        messagingClient.sendTextMessage(message.toNetworkModel())
         conversationDao.updateLastUpdateTime(message.conversationId, message.sentTime)
     }
 

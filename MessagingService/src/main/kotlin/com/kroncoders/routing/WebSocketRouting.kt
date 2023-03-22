@@ -1,6 +1,6 @@
 package com.kroncoders.routing
 
-import com.kroncoders.messaging.SessionManager
+import com.kroncoders.service.SessionService
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
@@ -10,27 +10,27 @@ import org.koin.ktor.ext.inject
 
 fun Route.messagesWebSocketRouting() {
 
-    val sessionManager by inject<SessionManager>()
+    val sessionService by inject<SessionService>()
 
 
     webSocket("/ws/{userId}") { // websocketSession
         val userId = call.parameters["userId"]?.toLong() ?: throw IllegalStateException("userId missing")
         try {
-            sessionManager.onSessionStarted(userId, this)
+            sessionService.onSessionStarted(userId, this)
 
             for (frame in incoming) {
                 when (frame) {
-                    is Frame.Text -> sessionManager.onMessages(frame.readText())
+                    is Frame.Text -> sessionService.onMessages(frame.readText())
                     else -> Unit
                 }
             }
 
         } catch (e: ClosedReceiveChannelException) {
             println("onClose $userId ")
-            sessionManager.onSessionClose(userId)
+            sessionService.onSessionClose(userId)
         } catch (e: Throwable) {
             println("onError $userId $e")
-            sessionManager.onSessionClose(userId)
+            sessionService.onSessionClose(userId)
         }
         for (frame in incoming) {
             if (frame is Frame.Text) {
