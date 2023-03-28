@@ -9,10 +9,11 @@ import com.kroncoders.android.ui.navigation.NavigationManager
 import com.kroncoders.android.ui.navigation.directions.Chat.Companion.getConversationId
 import com.kroncoders.android.ui.navigation.directions.ConversationEdit
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.getstream.log.Priority
+import io.getstream.log.streamLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
@@ -90,7 +91,7 @@ class ChatViewModel @Inject constructor(
             try {
                 chatRepository.syncConversation(conversationId)
             } catch (exception: Exception) {
-                Timber.e(exception)
+                streamLog(priority = Priority.ERROR, throwable = exception) { "Error in sync conversations " }
             }
         }
         chatRepository

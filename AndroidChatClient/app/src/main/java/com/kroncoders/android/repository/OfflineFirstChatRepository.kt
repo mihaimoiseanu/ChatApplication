@@ -1,7 +1,7 @@
 package com.kroncoders.android.repository
 
 import com.kroncoders.android.networking.ChatRestApi
-import com.kroncoders.android.networking.MessagingClient
+import com.kroncoders.android.networking.WebSocketMessagingService
 import com.kroncoders.android.networking.models.NetworkConversation
 import com.kroncoders.android.networking.models.NetworkMessage
 import com.kroncoders.android.networking.models.NetworkUser
@@ -22,7 +22,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 class OfflineFirstChatRepository(
-    private val messagingClient: MessagingClient,
+    private val webSocketMessagingService: WebSocketMessagingService,
     private val userDao: UserDao,
     private val messagesDao: MessageDao,
     private val conversationDao: ConversationDao,
@@ -50,7 +50,7 @@ class OfflineFirstChatRepository(
     override suspend fun currentUserId(): Long = chatDataStore.userId.first()
 
     override fun connectToServer() {
-        messagingClient.connectToWebSocket()
+        webSocketMessagingService.connectToWebSocket()
     }
 
     override fun getConversation(conversationId: Long): Flow<Conversation> {
@@ -115,10 +115,7 @@ class OfflineFirstChatRepository(
 
     override suspend fun syncConversations() {
         coroutineScope {
-            val userId = chatDataStore
-                .userId
-                .first()
-
+            val userId = chatDataStore.userId.first()
             chatRestApi
                 .getUserConversations(userId)
                 .map { networkConversation -> async { syncConversation(networkConversation) } }
@@ -180,13 +177,13 @@ class OfflineFirstChatRepository(
 
     override suspend fun sendMessage(message: Message) {
         messagesDao.insertMessage(message.toEntity(false))
-        messagingClient.sendTextMessage(message.toNetworkModel())
+        webSocketMessagingService.sendTextMessage(message.toNetworkModel())
         conversationDao.updateLastUpdateTime(message.conversationId, message.sentTime)
     }
 
     private fun listenToMessagesOnMessagingClient() {
-        messagingClient
-            .messagesFlow
+        webSocketMessagingService
+            .messagesStream
             .onEach(this::onNetworkMessageReceived)
             .launchIn(repositoryScope)
     }

@@ -1,7 +1,7 @@
 package com.kroncoders.android.repository
 
 import com.kroncoders.android.networking.ChatRestApi
-import com.kroncoders.android.networking.MessagingClient
+import com.kroncoders.android.networking.WebSocketMessagingService
 import com.kroncoders.android.storage.database.ChatDatabase
 import com.kroncoders.android.storage.database.daos.ConversationDao
 import com.kroncoders.android.storage.database.daos.MessageDao
@@ -19,7 +19,7 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideChatRepository(
-        messagingClient: MessagingClient,
+        webSocketMessagingService: WebSocketMessagingService,
         userDao: UserDao,
         messageDao: MessageDao,
         conversationDao: ConversationDao,
@@ -27,7 +27,7 @@ object RepositoryModule {
         chatDataStore: ChatDataStore,
         chatDatabase: ChatDatabase
     ): ChatRepository = OfflineFirstChatRepository(
-        messagingClient = messagingClient,
+        webSocketMessagingService = webSocketMessagingService,
         userDao = userDao,
         messagesDao = messageDao,
         conversationDao = conversationDao,
