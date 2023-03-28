@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import org.webrtc.IceCandidate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,6 +31,7 @@ class WebSocketMessagingService @Inject constructor(
     val callState: MutableStateFlow<CallState> = MutableStateFlow(CallState.Inactive)
 
     private val internalCallState: MutableStateFlow<InternalCallState> = MutableStateFlow(InternalCallState.Inactive)
+    private var iceCandidateJob: Job? = null
 
     init {
         internalCallState
@@ -92,7 +94,7 @@ class WebSocketMessagingService @Inject constructor(
             CallMessageType.AnswerSDP -> handleSDPAnswer(webSocketCallMessage)
             CallMessageType.IceSDP -> handleSDPIce(webSocketCallMessage)
             CallMessageType.Calling -> handleIncomingCall(webSocketCallMessage)
-            CallMessageType.Answering -> handleAnswer(webSocketCallMessage)
+            CallMessageType.AcceptCall -> handleAcceptCall(webSocketCallMessage)
             CallMessageType.Busy -> handleBusy(webSocketCallMessage)
         }
     }
@@ -102,10 +104,10 @@ class WebSocketMessagingService @Inject constructor(
         internalCallState.value = InternalCallState.Calling(conversationId)
     }
 
-    fun answerCall(conversationId: Long, answer: Boolean) {
+    fun acceptCall(conversationId: Long, acceptCall: Boolean) {
         messagingScope.launch {
-            if (answer) {
-                answerCall(conversationId)
+            if (acceptCall) {
+                acceptCall(conversationId)
             } else {
                 internalCallState.emit(InternalCallState.Busy(conversationId))
                 delay(1_000)
@@ -114,17 +116,23 @@ class WebSocketMessagingService @Inject constructor(
         }
     }
 
-    private suspend fun answerCall(conversationId: Long) {
+    fun endCall(conversationId: Long) {
+
+    }
+
+    private suspend fun acceptCall(conversationId: Long) {
         val callMessageJson = WebSocketCallMessage(
             userId = chatDataStore.userId.first(),
             conversationId = conversationId,
-            messageType = CallMessageType.Answering
+            messageType = CallMessageType.AcceptCall
         ).let { json.encodeToString(it) }
         val webSocketFrame = WebSocketFrame(WebSocketFrameType.CallMessage, callMessageJson)
         sendTextFrame(webSocketFrame)
-        callState.emit(CallState.Connecting(conversationId))
+        startConnection(conversationId)
     }
+    //endregion
 
+    //region Internal call state
     private suspend fun handleInternalInactiveState() = coroutineScope {
         launch { callState.emit(CallState.Inactive) }
     }
@@ -144,38 +152,6 @@ class WebSocketMessagingService @Inject constructor(
         callState.emit(CallState.Called(conversationId))
     }
 
-    private suspend fun handleIncomingCall(callMessage: WebSocketCallMessage) {
-        if (internalCallState.value != InternalCallState.Inactive) {
-            handleInternalBusyState(callMessage.conversationId)
-            return
-        }
-        internalCallState.emit(InternalCallState.Called(callMessage.conversationId))
-    }
-
-    private suspend fun handleSDPOffer(callMessage: WebSocketCallMessage) {
-        internalCallState.emit(InternalCallState.Offering(callMessage.conversationId, callMessage.sdp))
-    }
-
-    private suspend fun handleSDPAnswer(callMessage: WebSocketCallMessage) {
-        internalCallState.emit(InternalCallState.Answer(callMessage.conversationId, callMessage.sdp))
-    }
-
-    private suspend fun handleAnswer(callMessage: WebSocketCallMessage) {
-        val conversationId = callMessage.conversationId
-        //The other user answered so we start creating the webrtc connection
-        callState.emit(CallState.Connecting(conversationId))
-        webRtcSessionManager.createSession()
-        val sdpOffer = webRtcSessionManager.getOffer()
-        val callMessageJson = WebSocketCallMessage(
-            userId = chatDataStore.userId.first(),
-            conversationId = conversationId,
-            messageType = CallMessageType.OfferSDP,
-            sdp = sdpOffer
-        ).let { json.encodeToString(it) }
-        val webSocketFrame = WebSocketFrame(WebSocketFrameType.CallMessage, callMessageJson)
-        sendTextFrame(webSocketFrame)
-    }
-
     private suspend fun handleInternalSDPOffer(conversationId: Long, sdpOffer: String) {
         val sdpAnswer = webRtcSessionManager.getAnswerToOffer(sdpOffer)
         val callMessageJson = WebSocketCallMessage(
@@ -193,18 +169,16 @@ class WebSocketMessagingService @Inject constructor(
 
     }
 
-    private suspend fun handleSDPIce(callMessage: WebSocketCallMessage) {
-        val conversationId = callMessage.conversationId
-        val sdpICE = callMessage.sdp
-        webRtcSessionManager.handleIce(sdpICE)
-    }
-
-    private suspend fun handleBusy(callMessage: WebSocketCallMessage) {
-
+    private suspend fun handleIncomingCall(callMessage: WebSocketCallMessage) {
+        if (internalCallState.value != InternalCallState.Inactive) {
+            handleInternalBusyState(callMessage.conversationId)
+            return
+        }
+        internalCallState.emit(InternalCallState.Called(callMessage.conversationId))
     }
 
     private suspend fun handleInternalInCallState(conversationId: Long) {
-
+        callState.emit(CallState.InCall(conversationId))
     }
 
     private suspend fun handleInternalBusyState(conversationId: Long) = coroutineScope {
@@ -217,4 +191,65 @@ class WebSocketMessagingService @Inject constructor(
         sendTextFrame(webSocketFrame)
     }
     //endregion
+
+    //region WebSocket call frames
+    private suspend fun handleSDPOffer(callMessage: WebSocketCallMessage) {
+        internalCallState.emit(
+            InternalCallState.Offering(
+                callMessage.conversationId,
+                callMessage.sdp
+            )
+        )
+    }
+
+    private suspend fun handleSDPAnswer(callMessage: WebSocketCallMessage) {
+        internalCallState.emit(
+            InternalCallState.Answer(
+                callMessage.conversationId,
+                callMessage.sdp
+            )
+        )
+    }
+
+    private suspend fun handleAcceptCall(callMessage: WebSocketCallMessage) {
+        val conversationId = callMessage.conversationId
+        //The other user answered so we start creating the webrtc connection
+        startConnection(conversationId)
+        val sdpOffer = webRtcSessionManager.getOffer()
+        val callMessageJson = WebSocketCallMessage(
+            userId = chatDataStore.userId.first(),
+            conversationId = conversationId,
+            messageType = CallMessageType.OfferSDP,
+            sdp = sdpOffer
+        ).let { json.encodeToString(it) }
+        val webSocketFrame = WebSocketFrame(WebSocketFrameType.CallMessage, callMessageJson)
+        sendTextFrame(webSocketFrame)
+    }
+
+
+    private suspend fun handleSDPIce(callMessage: WebSocketCallMessage) {
+        val sdpICE = callMessage.sdp
+        webRtcSessionManager.handleIce(sdpICE)
+    }
+
+    private suspend fun handleBusy(callMessage: WebSocketCallMessage) {
+
+    }
+    //endregion
+
+    private suspend fun startConnection(conversationId: Long) {
+        iceCandidateJob = webRtcSessionManager
+            .iceCandidateStream
+            .onEach { iceCandidate -> sendIceCandidate(conversationId, iceCandidate) }
+            .launchIn(messagingScope)
+
+        webRtcSessionManager.createSession()
+        callState.emit(CallState.Connecting(conversationId))
+    }
+
+    private fun sendIceCandidate(conversationId: Long, iceCandidate: IceCandidate) {
+        messagingScope.launch {
+            TODO("SEND ICE")
+        }
+    }
 }
