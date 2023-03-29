@@ -40,8 +40,8 @@ class WebRtcSessionManagerImpl(
     private val logger by taggedLogger("Call::LocalWebRtcSessionManager")
     private val sessionManagerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val _iceCandidateStream: MutableSharedFlow<IceCandidate> = MutableSharedFlow()
-    override val iceCandidateStream: SharedFlow<IceCandidate> = _iceCandidateStream
+    private val _iceCandidateStream: MutableSharedFlow<String> = MutableSharedFlow()
+    override val iceCandidateStream: SharedFlow<String> = _iceCandidateStream
 
     // used to send local video track to the fragment
     private val _localVideoTrackStream: MutableSharedFlow<VideoTrack> = MutableSharedFlow()
@@ -186,7 +186,12 @@ class WebRtcSessionManagerImpl(
             configuration = peerConnectionFactory.rtcConfig,
             type = StreamPeerType.SUBSCRIBER,
             mediaConstraints = mediaConstraints,
-            onIceCandidateRequest = { iceCandidate, _ -> sessionManagerScope.launch { _iceCandidateStream.emit(iceCandidate) } },
+            onIceCandidateRequest = { iceCandidate, _ ->
+                sessionManagerScope.launch {
+                    val iceSDP = "${iceCandidate.sdpMid}$ICE_SEPARATOR${iceCandidate.sdpMLineIndex}$ICE_SEPARATOR${iceCandidate.sdp}"
+                    _iceCandidateStream.emit(iceSDP)
+                }
+            },
             onVideoTrack = { rtpTransceiver ->
                 val track = rtpTransceiver?.receiver?.track() ?: return@makePeerConnection
                 if (track.kind() == MediaStreamTrack.VIDEO_TRACK_KIND) {

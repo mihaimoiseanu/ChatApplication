@@ -11,5 +11,5 @@ data class WebSocketCallMessage(
 )
 
 enum class CallMessageType {
-    Calling, AcceptCall, Busy, OfferSDP, AnswerSDP, IceSDP
+    Calling, AcceptCall, Busy, OfferSDP, AnswerSDP, IceSDP, End
 }

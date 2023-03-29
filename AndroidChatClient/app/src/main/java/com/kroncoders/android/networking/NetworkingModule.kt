@@ -3,6 +3,12 @@
 package com.kroncoders.android.networking
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.kroncoders.android.networking.call.CallService
+import com.kroncoders.android.networking.call.CallServiceImpl
+import com.kroncoders.android.networking.messages.MessagesService
+import com.kroncoders.android.networking.messages.MessagesServiceImpl
+import com.kroncoders.android.networking.webrtc.session.WebRtcSessionManager
+import com.kroncoders.android.storage.datastore.ChatDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -57,5 +63,22 @@ object NetworkingModule {
     @Provides
     fun provideChatRestApi(retrofit: Retrofit): ChatRestApi {
         return retrofit.create(ChatRestApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMessagingService(webSocketMessagingService: WebSocketMessagingService, json: Json): MessagesService {
+        return MessagesServiceImpl(webSocketMessagingService, json)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCallService(
+        webSocketMessagingService: WebSocketMessagingService,
+        json: Json,
+        chatDataStore: ChatDataStore,
+        webRtcSessionManager: WebRtcSessionManager
+    ): CallService {
+        return CallServiceImpl(chatDataStore, json, webSocketMessagingService, webRtcSessionManager)
     }
 }

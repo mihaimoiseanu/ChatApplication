@@ -2,6 +2,7 @@ package com.kroncoders.android.repository
 
 import com.kroncoders.android.networking.ChatRestApi
 import com.kroncoders.android.networking.WebSocketMessagingService
+import com.kroncoders.android.networking.messages.MessagesService
 import com.kroncoders.android.networking.models.NetworkConversation
 import com.kroncoders.android.networking.models.NetworkMessage
 import com.kroncoders.android.networking.models.NetworkUser
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.*
 
 class OfflineFirstChatRepository(
     private val webSocketMessagingService: WebSocketMessagingService,
+    private val messagesService: MessagesService,
     private val userDao: UserDao,
     private val messagesDao: MessageDao,
     private val conversationDao: ConversationDao,
@@ -177,12 +179,12 @@ class OfflineFirstChatRepository(
 
     override suspend fun sendMessage(message: Message) {
         messagesDao.insertMessage(message.toEntity(false))
-        webSocketMessagingService.sendTextMessage(message.toNetworkModel())
+        messagesService.sendTextMessage(message.toNetworkModel())
         conversationDao.updateLastUpdateTime(message.conversationId, message.sentTime)
     }
 
     private fun listenToMessagesOnMessagingClient() {
-        webSocketMessagingService
+        messagesService
             .messagesStream
             .onEach(this::onNetworkMessageReceived)
             .launchIn(repositoryScope)

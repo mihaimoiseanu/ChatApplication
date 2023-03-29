@@ -1,4 +1,4 @@
-package com.kroncoders.android.networking
+package com.kroncoders.android.networking.call
 
 sealed interface CallState {
     object Inactive : CallState
@@ -7,4 +7,6 @@ sealed interface CallState {
     data class Connecting(val conversationId: Long) : CallState
     data class InCall(val conversationId: Long) : CallState
     object Busy : CallState
+
+    object End : CallState
 }

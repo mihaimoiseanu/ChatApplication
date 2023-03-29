@@ -2,14 +2,13 @@ package com.kroncoders.android.networking.webrtc.session
 
 import com.kroncoders.android.networking.webrtc.peer.StreamPeerConnectionFactory
 import kotlinx.coroutines.flow.SharedFlow
-import org.webrtc.IceCandidate
 import org.webrtc.VideoTrack
 
 interface WebRtcSessionManager {
 
     val peerConnectionFactory: StreamPeerConnectionFactory
 
-    val iceCandidateStream: SharedFlow<IceCandidate>
+    val iceCandidateStream: SharedFlow<String>
 
     val localVideoTrackStream: SharedFlow<VideoTrack>
 
