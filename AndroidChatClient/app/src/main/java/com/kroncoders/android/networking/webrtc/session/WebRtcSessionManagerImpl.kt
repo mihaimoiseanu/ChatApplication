@@ -7,8 +7,6 @@ import android.hardware.camera2.CameraMetadata
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
-import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.core.content.getSystemService
 import com.kroncoders.android.networking.webrtc.audio.AudioHandler
 import com.kroncoders.android.networking.webrtc.audio.AudioSwitchHandler
@@ -29,9 +27,6 @@ import java.util.*
 
 private const val ICE_SEPARATOR = '$'
 
-val LocalWebRtcSessionManager: ProvidableCompositionLocal<WebRtcSessionManagerImpl> =
-    staticCompositionLocalOf { error("WebRtcSessionManager was not initialized") }
-
 class WebRtcSessionManagerImpl(
     @ApplicationContext private val context: Context,
     override val peerConnectionFactory: StreamPeerConnectionFactory
@@ -44,12 +39,12 @@ class WebRtcSessionManagerImpl(
     override val iceCandidateStream: SharedFlow<String> = _iceCandidateStream
 
     // used to send local video track to the fragment
-    private val _localVideoTrackStream: MutableSharedFlow<VideoTrack> = MutableSharedFlow()
-    override val localVideoTrackStream: MutableSharedFlow<VideoTrack> = _localVideoTrackStream
+    private val _localVideoTrackStream: MutableSharedFlow<VideoTrack?> = MutableSharedFlow()
+    override val localVideoTrackStream: MutableSharedFlow<VideoTrack?> = _localVideoTrackStream
 
     // used to send remote video track to the sender
-    private val _remoteVideoTrackStream: MutableSharedFlow<VideoTrack> = MutableSharedFlow()
-    override val remoteVideoTrackStream: MutableSharedFlow<VideoTrack> = MutableSharedFlow()
+    private val _remoteVideoTrackStream: MutableSharedFlow<VideoTrack?> = MutableSharedFlow()
+    override val remoteVideoTrackStream: MutableSharedFlow<VideoTrack?> = MutableSharedFlow()
 
     // declaring video constraints and setting OfferToReceiveVideo to true
     // this step is mandatory to create valid offer and answer
@@ -165,10 +160,15 @@ class WebRtcSessionManagerImpl(
 
     override fun disconnect() {
         //dispose audio & video tracks
-        remoteVideoTrackStream.replayCache.forEach { videoTrack -> videoTrack.dispose() }
-        localVideoTrackStream.replayCache.forEach { videoTrack -> videoTrack.dispose() }
+        remoteVideoTrackStream.replayCache.forEach { videoTrack -> videoTrack?.dispose() }
+        localVideoTrackStream.replayCache.forEach { videoTrack -> videoTrack?.dispose() }
         localAudioTrack.dispose()
         localVideoTrack.dispose()
+
+        sessionManagerScope.launch {
+            _remoteVideoTrackStream.emit(null)
+            _localVideoTrackStream.emit(null)
+        }
 
         //dispose audio handler and video capturer
         audioHandler.stop()

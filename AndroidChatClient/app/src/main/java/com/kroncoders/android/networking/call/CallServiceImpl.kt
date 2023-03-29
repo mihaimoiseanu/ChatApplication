@@ -124,7 +124,7 @@ class CallServiceImpl(
     }
 
     private suspend fun handleInternalInCallState(conversationId: Long) {
-        _callState.emit(CallState.InCall(conversationId))
+        _callState.emit(CallState.InCall(conversationId, webRtcSessionManager.localVideoTrackStream, webRtcSessionManager.remoteVideoTrackStream))
     }
 
     private suspend fun handleInternalBusyState(conversationId: Long) = coroutineScope {
@@ -227,7 +227,7 @@ class CallServiceImpl(
             .launchIn(this)
 
         webRtcSessionManager.createSession()
-        _callState.emit(CallState.Connecting(conversationId))
+        _callState.emit(CallState.Connecting(conversationId, webRtcSessionManager.localVideoTrackStream))
     }
 
     private suspend fun sendEndCallFrame(conversationId: Long) {

@@ -7,11 +7,11 @@ data class WebRTCMessage(
     val userId: Long,
     val conversationId: Long,
     val messageType: WebRTCMessageType,
-    val message: String
+    val sdp: String
 )
 
 enum class WebRTCMessageType {
-    Offer, Answer, ICE
+    Calling, AcceptCall, Busy, OfferSDP, AnswerSDP, IceSDP
 }
 
 

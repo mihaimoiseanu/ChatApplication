@@ -10,9 +10,9 @@ interface WebRtcSessionManager {
 
     val iceCandidateStream: SharedFlow<String>
 
-    val localVideoTrackStream: SharedFlow<VideoTrack>
+    val localVideoTrackStream: SharedFlow<VideoTrack?>
 
-    val remoteVideoTrackStream: SharedFlow<VideoTrack>
+    val remoteVideoTrackStream: SharedFlow<VideoTrack?>
 
     fun createSession()
 

@@ -9,7 +9,7 @@ data class WebSocketFrame(
 )
 
 enum class WebSocketFrameType {
-    Message,
-    WebRTC,
-    PresenceIndicator
+    TextMessage,
+    CallMessage,
+    PresenceMessage
 }

@@ -34,9 +34,9 @@ class SessionService(
         sessionManagerScope.launch {
             val frame: WebSocketFrame = json.decodeFromString(textFrame)
             when (frame.type) {
-                WebSocketFrameType.Message -> handleTextMessageFrame(frame.content)
-                WebSocketFrameType.WebRTC -> handleWebRTCMessageFrame(frame.content)
-                WebSocketFrameType.PresenceIndicator -> TODO()
+                WebSocketFrameType.TextMessage -> handleTextMessageFrame(frame.content)
+                WebSocketFrameType.CallMessage -> handleWebRTCMessageFrame(frame.content)
+                WebSocketFrameType.PresenceMessage -> TODO()
             }
         }
     }
