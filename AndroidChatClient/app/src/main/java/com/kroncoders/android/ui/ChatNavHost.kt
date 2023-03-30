@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.kroncoders.android.ui.navigation.directions.*
+import com.kroncoders.android.ui.screens.call.CallScreen
 import com.kroncoders.android.ui.screens.chat.ChatScreen
 import com.kroncoders.android.ui.screens.conversations.create.ConversationCreateScreen
 import com.kroncoders.android.ui.screens.conversations.edit.ConversationEditScreen
@@ -36,6 +37,7 @@ fun ChatNavHost(navController: NavHostController) {
         composable(ConversationsCreate::class.toString()) { ConversationCreateScreen() }
         composable(Chat::class.toString()) { ChatScreen() }
         composable(ConversationEdit::class.toString()) { ConversationEditScreen() }
+        composable(Call::class.toString()) { CallScreen() }
     }
 
 }

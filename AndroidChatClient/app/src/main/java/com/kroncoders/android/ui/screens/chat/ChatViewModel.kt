@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.kroncoders.android.repository.ChatRepository
 import com.kroncoders.android.repository.models.Message
 import com.kroncoders.android.ui.navigation.NavigationManager
+import com.kroncoders.android.ui.navigation.directions.Call
 import com.kroncoders.android.ui.navigation.directions.Chat.Companion.getConversationId
 import com.kroncoders.android.ui.navigation.directions.ConversationEdit
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -70,6 +71,10 @@ class ChatViewModel @Inject constructor(
 
     fun addUsers() {
         viewModelScope.launch { navigationManager.navigate(ConversationEdit(screenModel.value.conversationId)) }
+    }
+
+    fun callUser() {
+        viewModelScope.launch { navigationManager.navigate(Call(screenModel.value.conversationId, true)) }
     }
 
     private fun getCurrentUser() {

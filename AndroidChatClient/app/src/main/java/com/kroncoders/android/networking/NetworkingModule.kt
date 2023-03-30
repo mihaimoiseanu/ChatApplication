@@ -9,6 +9,7 @@ import com.kroncoders.android.networking.messages.MessagesService
 import com.kroncoders.android.networking.messages.MessagesServiceImpl
 import com.kroncoders.android.networking.webrtc.session.WebRtcSessionManager
 import com.kroncoders.android.storage.datastore.ChatDataStore
+import com.kroncoders.android.ui.navigation.NavigationManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -77,8 +78,9 @@ object NetworkingModule {
         webSocketMessagingService: WebSocketMessagingService,
         json: Json,
         chatDataStore: ChatDataStore,
-        webRtcSessionManager: WebRtcSessionManager
+        webRtcSessionManager: WebRtcSessionManager,
+        navigationManager: NavigationManager
     ): CallService {
-        return CallServiceImpl(chatDataStore, json, webSocketMessagingService, webRtcSessionManager)
+        return CallServiceImpl(chatDataStore, json, webSocketMessagingService, webRtcSessionManager, navigationManager)
     }
 }

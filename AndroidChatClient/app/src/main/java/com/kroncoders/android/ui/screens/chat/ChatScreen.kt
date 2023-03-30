@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
@@ -43,9 +44,9 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel()) {
             modifier = Modifier.fillMaxWidth(),
             title = { Text(screenModel.conversationName) },
             actions = {
-                IconButton(onClick = viewModel::addUsers) {
+                IconButton(onClick = viewModel::callUser) {
                     Icon(
-                        imageVector = Icons.Default.Edit,
+                        imageVector = Icons.Default.Call,
                         contentDescription = null
                     )
                 }

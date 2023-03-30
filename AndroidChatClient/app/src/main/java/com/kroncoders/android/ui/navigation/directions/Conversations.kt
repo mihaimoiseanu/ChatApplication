@@ -19,7 +19,7 @@ object ConversationsCreate : NavigationDirection {
     override val navBuilder: NavOptionsBuilder.() -> Unit = {}
 }
 
-class ConversationEdit(val conversationId: Long) : NavigationDirection {
+data class ConversationEdit(val conversationId: Long) : NavigationDirection {
 
     override val arguments: Bundle = bundleOf(ConversationIdKey to conversationId)
     override val navBuilder: NavOptionsBuilder.() -> Unit = {}

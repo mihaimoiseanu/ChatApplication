@@ -10,6 +10,14 @@ data class WebSocketCallMessage(
     val sdp: String = ""
 )
 
+@Serializable(with = CallMessageTypeSerializer::class)
 enum class CallMessageType {
     Calling, AcceptCall, Busy, OfferSDP, AnswerSDP, IceSDP, End
 }
+
+private class CallMessageTypeSerializer : EnumAsIntSerializer<CallMessageType>(
+    serialName = "CallMessageTypeSerializer",
+    serialize = { it.ordinal },
+    deserialize = { CallMessageType.values()[it] }
+)
+

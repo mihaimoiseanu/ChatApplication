@@ -8,8 +8,15 @@ data class WebSocketFrame(
     val content: String
 )
 
+@Serializable(with = FrameTypeSerializer::class)
 enum class WebSocketFrameType {
     TextMessage,
     CallMessage,
     PresenceMessage
 }
+
+private class FrameTypeSerializer : EnumAsIntSerializer<WebSocketFrameType>(
+    serialName = "WebSocketFrameType",
+    serialize = { it.ordinal },
+    deserialize = { WebSocketFrameType.values()[it] }
+)

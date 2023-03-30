@@ -46,8 +46,10 @@ class SessionService(
         val savedMessage = messagesService.insertMessage(message = incomingMessage)
         val usersInConversation = userService.getUsersIdsForConversation(savedMessage.conversationId)
         val savedMessageJson = json.encodeToString(savedMessage)
+        val frameToSend =
+            WebSocketFrame(WebSocketFrameType.TextMessage, savedMessageJson).let { json.encodeToString(it) }
         usersInConversation.forEach { userId ->
-            clients[userId]?.send(savedMessageJson)
+            clients[userId]?.send(frameToSend)
         }
     }
 
@@ -56,9 +58,11 @@ class SessionService(
         val conversationUsers =
             userService.getUsersIdsForConversation(webRTCMessage.conversationId) - webRTCMessage.userId
         //TODO check if the users are online
+        val frameToSend =
+            WebSocketFrame(WebSocketFrameType.CallMessage, webRTCMessageFrame).let { json.encodeToString(it) }
         conversationUsers.forEach { userId ->
             launch {
-                clients[userId]?.send(webRTCMessageFrame)
+                clients[userId]?.send(frameToSend)
             }
         }
     }

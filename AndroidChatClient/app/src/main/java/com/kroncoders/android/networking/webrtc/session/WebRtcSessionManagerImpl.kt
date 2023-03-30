@@ -7,6 +7,8 @@ import android.hardware.camera2.CameraMetadata
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.core.content.getSystemService
 import com.kroncoders.android.networking.webrtc.audio.AudioHandler
 import com.kroncoders.android.networking.webrtc.audio.AudioSwitchHandler
@@ -26,6 +28,9 @@ import org.webrtc.*
 import java.util.*
 
 private const val ICE_SEPARATOR = '$'
+
+val LocalWebRtcSessionManager: ProvidableCompositionLocal<WebRtcSessionManager> =
+    staticCompositionLocalOf { error("WebRtcSessionManager was not initialized") }
 
 class WebRtcSessionManagerImpl(
     @ApplicationContext private val context: Context,

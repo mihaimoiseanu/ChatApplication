@@ -7,6 +7,8 @@ import com.kroncoders.android.networking.models.WebSocketFrame
 import com.kroncoders.android.networking.models.WebSocketFrameType
 import com.kroncoders.android.networking.webrtc.session.WebRtcSessionManager
 import com.kroncoders.android.storage.datastore.ChatDataStore
+import com.kroncoders.android.ui.navigation.NavigationManager
+import com.kroncoders.android.ui.navigation.directions.Call
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.decodeFromString
@@ -18,12 +20,13 @@ class CallServiceImpl(
     private val chatDataStore: ChatDataStore,
     private val json: Json,
     private val webSocketMessagingService: WebSocketMessagingService,
-    private val webRtcSessionManager: WebRtcSessionManager
+    private val webRtcSessionManager: WebRtcSessionManager,
+    private val navigationManager: NavigationManager
 ) : CallService, CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob() + Dispatchers.IO
 
-    private val _callState: MutableStateFlow<CallState> = MutableStateFlow(CallState.Inactive)
+    private val _callState: MutableSharedFlow<CallState> = MutableSharedFlow(replay = 1)
     override val callState: SharedFlow<CallState> = _callState
 
     private val internalCallState: MutableStateFlow<InternalCallState> = MutableStateFlow(InternalCallState.Inactive)
@@ -50,6 +53,10 @@ class CallServiceImpl(
             .filter { it.type == WebSocketFrameType.CallMessage }
             .onEach { handleCallFrame(it.content) }
             .launchIn(this)
+
+        launch {
+            _callState.emit(CallState.Inactive)
+        }
     }
 
     override fun makeCall(conversationId: Long) {
@@ -104,6 +111,8 @@ class CallServiceImpl(
 
     private suspend fun handleInternalCalledState(conversationId: Long) = coroutineScope {
         _callState.emit(CallState.Called(conversationId))
+        //when we are called go directly to call screen
+        navigationManager.navigate(Call(conversationId, false))
     }
 
     private suspend fun handleInternalSDPOffer(conversationId: Long, sdpOffer: String) {
