@@ -40,7 +40,7 @@ class LoginViewModel @Inject constructor(
             onLoading = { loading -> screenModel.update { it.copy(isLoading = loading) } },
             onError = { error -> screenModel.update { it.copy(error = error) } },
             onSuccess = {
-                chatRepository.connectToServer()
+                chatRepository.connectToWebSocket()
                 navigationManager.navigate(ConversationsList)
             }
         )

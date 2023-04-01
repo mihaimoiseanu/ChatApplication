@@ -39,19 +39,32 @@ class OfflineFirstChatRepository(
         listenToMessagesOnMessagingClient()
     }
 
+    override suspend fun isSessionActive(): Boolean {
+        return try {
+            val currentUserId = chatDataStore.userId.first()
+            val currentUserName = chatDataStore.userName.first()
+
+            val networkUser = chatRestApi.getUser(currentUserId)
+            networkUser.id == currentUserId && networkUser.userName == currentUserName && currentUserName.isNotBlank()
+        } catch (exception: Exception) {
+            false
+        }
+    }
+
     override suspend fun loginUser(user: User) {
         val userLoggedIn = chatRestApi.loginUser(user.toNetworkModel())
         chatDataStore.saveUserId(userId = userLoggedIn.id!!)
+        chatDataStore.saveUserName(userName = userLoggedIn.userName)
     }
 
     override suspend fun logout() {
-        chatDataStore.saveUserId(-1L)
+        chatDataStore.clearDatastore()
         chatDatabase.clearAllTables()
     }
 
     override suspend fun currentUserId(): Long = chatDataStore.userId.first()
 
-    override fun connectToServer() {
+    override fun connectToWebSocket() {
         webSocketMessagingService.connectToWebSocket()
     }
 

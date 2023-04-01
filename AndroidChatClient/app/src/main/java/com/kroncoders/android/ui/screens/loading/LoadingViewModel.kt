@@ -8,7 +8,6 @@ import com.kroncoders.android.ui.navigation.directions.ConversationsList
 import com.kroncoders.android.ui.navigation.directions.Login
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,13 +21,12 @@ class LoadingViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            delay(2000L)
-            val currentUser = chatRepository.currentUserId()
-            if (currentUser == -1L) {
-                navigationManager.navigate(Login)
-            } else {
-                chatRepository.connectToServer()
+            if (chatRepository.isSessionActive()) {
+                chatRepository.connectToWebSocket()
                 navigationManager.navigate(ConversationsList)
+            } else {
+                chatRepository.logout()
+                navigationManager.navigate(Login)
             }
         }
     }

@@ -6,6 +6,7 @@ import com.kroncoders.android.networking.models.NetworkUser
 import retrofit2.http.*
 
 interface ChatRestApi {
+
     @POST("user")
     suspend fun loginUser(@Body networkUser: NetworkUser): NetworkUser
 

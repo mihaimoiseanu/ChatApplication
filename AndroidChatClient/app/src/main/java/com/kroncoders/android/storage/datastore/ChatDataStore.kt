@@ -43,12 +43,25 @@ class ChatDataStore @Inject constructor(
         preferences[UserIdKey] ?: -1L
     }
 
+    val userName: Flow<String> = dataStore.data.map { preferences ->
+        preferences[UsernameKey] ?: ""
+    }
+
     suspend fun saveUserId(userId: Long) {
         dataStore.edit { preferences -> preferences[UserIdKey] = userId }
     }
 
+    suspend fun saveUserName(userName: String) {
+        dataStore.edit { preferences -> preferences[UsernameKey] = userName }
+    }
+
+    suspend fun clearDatastore() {
+        dataStore.edit { preferences -> preferences.clear() }
+    }
+
     companion object {
         private val UserIdKey = longPreferencesKey("user_id")
+        private val UsernameKey = stringPreferencesKey("user_name")
     }
 
 }

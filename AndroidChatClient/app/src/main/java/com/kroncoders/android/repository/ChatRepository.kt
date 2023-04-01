@@ -7,10 +7,11 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
 
+    suspend fun isSessionActive(): Boolean
     suspend fun loginUser(user: User)
     suspend fun logout()
     suspend fun currentUserId(): Long
-    fun connectToServer()
+    fun connectToWebSocket()
 
     fun getConversations(): Flow<List<Conversation>>
     fun getConversation(conversationId: Long): Flow<Conversation>
