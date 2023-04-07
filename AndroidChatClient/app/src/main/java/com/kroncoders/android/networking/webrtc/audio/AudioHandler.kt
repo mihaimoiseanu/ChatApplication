@@ -4,8 +4,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
-import io.getstream.log.StreamLog
-import io.getstream.log.taggedLogger
+import timber.log.Timber
 
 interface AudioHandler {
     /**
@@ -21,8 +20,6 @@ interface AudioHandler {
 
 class AudioSwitchHandler(private val context: Context) : AudioHandler {
 
-    private val logger by taggedLogger(TAG)
-
     private var audioDeviceChangeListener: AudioDeviceChangeListener? = null
     private var onAudioFocusChangeListener: AudioManager.OnAudioFocusChangeListener? = null
     private var preferredDeviceList: List<Class<out AudioDevice>>? = null
@@ -33,7 +30,7 @@ class AudioSwitchHandler(private val context: Context) : AudioHandler {
     private val handler = Handler(Looper.getMainLooper())
 
     override fun start() {
-        logger.d { "[start] audioSwitch: $audioSwitch" }
+        Timber.d("[start] audioSwitch: $audioSwitch")
         handler.removeCallbacksAndMessages(null)
         handler.post {
             val switch = AudioSwitch(
@@ -48,7 +45,7 @@ class AudioSwitchHandler(private val context: Context) : AudioHandler {
     }
 
     override fun stop() {
-        logger.d { "[stop] no args" }
+        Timber.d("[stop] no args")
         handler.removeCallbacksAndMessages(null)
         handler.post {
             audioSwitch?.stop()
@@ -57,7 +54,6 @@ class AudioSwitchHandler(private val context: Context) : AudioHandler {
     }
 
     companion object {
-        private const val TAG = "Call:AudioSwitchHandler"
         private val defaultOnAudioFocusChangeListener by lazy(LazyThreadSafetyMode.NONE) {
             DefaultOnAudioFocusChangeListener()
         }
@@ -65,7 +61,7 @@ class AudioSwitchHandler(private val context: Context) : AudioHandler {
         private val defaultAudioDeviceChangeListener by lazy(LazyThreadSafetyMode.NONE) {
             object : AudioDeviceChangeListener {
                 override fun invoke(audioDevices: List<AudioDevice>, selectedAudioDevice: AudioDevice?) {
-                    StreamLog.i(TAG) { "[onAudioDeviceChange] selectedAudioDevice: $selectedAudioDevice" }
+                    Timber.i("[onAudioDeviceChange] selectedAudioDevice: $selectedAudioDevice")
                 }
             }
         }
@@ -91,7 +87,7 @@ class AudioSwitchHandler(private val context: Context) : AudioHandler {
                     AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> "AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK"
                     else -> "AUDIOFOCUS_INVALID"
                 }
-                StreamLog.i(TAG) { "[onAudioFocusChange] focusChange: $typeOfChange" }
+                Timber.i("[onAudioFocusChange] focusChange: $typeOfChange")
             }
         }
     }

@@ -22,7 +22,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import javax.inject.Singleton
 
-const val BaseUrl: String = "http://192.168.50.29:8080/"
+const val BaseUrl: String = "http://192.168.1.204:8080/"
 
 @Module
 @InstallIn(SingletonComponent::class)

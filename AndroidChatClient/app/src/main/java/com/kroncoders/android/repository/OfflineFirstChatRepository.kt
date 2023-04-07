@@ -60,6 +60,7 @@ class OfflineFirstChatRepository(
     override suspend fun logout() {
         chatDataStore.clearDatastore()
         chatDatabase.clearAllTables()
+        webSocketMessagingService.close()
     }
 
     override suspend fun currentUserId(): Long = chatDataStore.userId.first()

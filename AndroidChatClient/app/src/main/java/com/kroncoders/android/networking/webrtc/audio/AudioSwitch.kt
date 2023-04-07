@@ -3,7 +3,7 @@ package com.kroncoders.android.networking.webrtc.audio
 import android.content.Context
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
-import io.getstream.log.taggedLogger
+import timber.log.Timber
 
 class AudioSwitch internal constructor(
     context: Context,
@@ -15,8 +15,6 @@ class AudioSwitch internal constructor(
         audioFocusChangeListener = audioFocusChangeListener
     )
 ) {
-
-    private val logger by taggedLogger("Call:AudioSwitch")
 
     private var audioDeviceChangeListener: AudioDeviceChangeListener? = null
     private var selectedDevice: AudioDevice? = null
@@ -56,7 +54,7 @@ class AudioSwitch internal constructor(
      * called in order to prevent a memory leak.
      */
     fun start(listener: AudioDeviceChangeListener) {
-        logger.d { "[start] state: $state" }
+        Timber.d("[start] state: $state")
         audioDeviceChangeListener = listener
         when (state) {
             State.STOPPED -> {
@@ -74,7 +72,7 @@ class AudioSwitch internal constructor(
      * with [AudioSwitch.activate].
      */
     fun stop() {
-        logger.d { "[stop] state: $state" }
+        Timber.d("[stop] state: $state")
         when (state) {
             State.STARTED -> closeListener()
             State.ACTIVATED -> {
@@ -92,7 +90,7 @@ class AudioSwitch internal constructor(
      * state.
      */
     fun activate() {
-        logger.d { "[activate] state: $state" }
+        Timber.d("[activate] state: $state")
         when (state) {
             State.STARTED -> {
                 audioManager.cacheAudioState()
@@ -113,7 +111,7 @@ class AudioSwitch internal constructor(
      * audio focus from the client application.
      */
     private fun deactivate() {
-        logger.d { "[deactivate] state: $state" }
+        Timber.d("[deactivate] state: $state")
         when (state) {
             State.ACTIVATED -> {
                 // Restore stored audio state
@@ -126,7 +124,7 @@ class AudioSwitch internal constructor(
     }
 
     private fun selectDevice(audioDevice: AudioDevice?) {
-        logger.d { "[selectDevice] audioDevice: $audioDevice" }
+        Timber.d("[selectDevice] audioDevice: $audioDevice")
         if (selectedDevice != audioDevice) {
             userSelectedDevice = audioDevice
             enumeratedDevices()
@@ -138,7 +136,7 @@ class AudioSwitch internal constructor(
     }
 
     private fun activate(audioDevice: AudioDevice) {
-        logger.d { "[activate] audioDevice: $audioDevice" }
+        Timber.d("[activate] audioDevice: $audioDevice")
         when (audioDevice) {
             is AudioDevice.BluetoothHeadset -> audioManager.enableSpeakerphone(false)
             is AudioDevice.Earpiece, is AudioDevice.WiredHeadset -> audioManager.enableSpeakerphone(false)
@@ -153,7 +151,7 @@ class AudioSwitch internal constructor(
     )
 
     private fun enumeratedDevices(bluetoothHeadsetName: String? = null) {
-        logger.d { "[enumerateDevices] bluetoothHeadsetName: $bluetoothHeadsetName" }
+        Timber.d("[enumerateDevices] bluetoothHeadsetName: $bluetoothHeadsetName")
         // save off the old state and 'semi'-deep copy the list of audio devices
         val oldAudioDeviceState = AudioDeviceState(mutableAudioDevices.toList(), selectedDevice)
         // update audio device list and selected device
@@ -171,7 +169,7 @@ class AudioSwitch internal constructor(
         } else {
             null
         }
-        logger.v { "[enumerateDevices] selectedDevice: $selectedDevice" }
+        Timber.v("[enumerateDevices] selectedDevice: $selectedDevice")
 
         //Activate the device if in the active state
         if (state == State.ACTIVATED) {
@@ -185,10 +183,11 @@ class AudioSwitch internal constructor(
     }
 
     private fun addAvailableAudioDevices(bluetoothHeadsetName: String?) {
-        logger.d {
+        Timber.d(
             "[addAvailableAudioDevices] wiredHeadsetAvailable: $wiredHeadsetAvailable, " +
                     "bluetoothHeadsetName: $bluetoothHeadsetName"
-        }
+        )
+
         mutableAudioDevices.clear()
         preferredDeviceList.forEach { audioDevice ->
             when (audioDevice) {
@@ -201,26 +200,26 @@ class AudioSwitch internal constructor(
                      */
                 }
                 AudioDevice.WiredHeadset::class.java -> {
-                    logger.v {
+                    Timber.v(
                         "[addAvailableAudioDevices] #WiredHeadset; wiredHeadsetAvailable: $wiredHeadsetAvailable"
-                    }
+                    )
                     if (wiredHeadsetAvailable) {
                         mutableAudioDevices.add(AudioDevice.WiredHeadset())
                     }
                 }
                 AudioDevice.Earpiece::class.java -> {
                     val hasEarpiece = audioManager.hasEarpiece()
-                    logger.v {
+                    Timber.v(
                         "[addAvailableAudioDevices] #Earpiece; hasEarpiece: $hasEarpiece, " +
                                 "wiredHeadsetAvailable: $wiredHeadsetAvailable"
-                    }
+                    )
                     if (hasEarpiece && !wiredHeadsetAvailable) {
                         mutableAudioDevices.add(AudioDevice.Earpiece())
                     }
                 }
                 AudioDevice.Speakerphone::class.java -> {
                     val hasSpeakerphone = audioManager.hasSpeakerphone()
-                    logger.v { "[addAvailableAudioDevices] #Speakerphone; hasSpeakerphone: $hasSpeakerphone" }
+                    Timber.v("[addAvailableAudioDevices] #Speakerphone; hasSpeakerphone: $hasSpeakerphone")
                     if (hasSpeakerphone) {
                         mutableAudioDevices.add(AudioDevice.Speakerphone())
                     }

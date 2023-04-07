@@ -8,11 +8,10 @@ import com.kroncoders.android.repository.models.User
 import com.kroncoders.android.ui.executeRequest
 import com.kroncoders.android.ui.navigation.NavigationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.getstream.log.Priority
-import io.getstream.log.streamLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 data class ConversationCreateScreenModel(
@@ -42,7 +41,7 @@ class ConversationCreateViewModel
             try {
                 chatRepository.syncUsers()
             } catch (exception: Exception) {
-                streamLog(priority = Priority.ERROR, throwable = exception) { "Error in sync users " }
+                Timber.e(exception)
             }
         }
         chatRepository

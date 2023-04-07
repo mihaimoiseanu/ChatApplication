@@ -5,7 +5,7 @@ import android.content.pm.PackageManager
 import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import io.getstream.log.taggedLogger
+import timber.log.Timber
 
 internal class AudioManagerAdapterImpl(
     private val context: Context,
@@ -14,15 +14,13 @@ internal class AudioManagerAdapterImpl(
     private val audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
 ) : AudioManagerAdapter {
 
-    private val logger by taggedLogger("Call:AudioManager")
-
     private var savedAudioMode = 0
     private var savedIsMicrophoneMuted = false
     private var savedSpeakerphoneEnabled = false
     private var audioRequest: AudioFocusRequest? = null
 
     init {
-        logger.i { "<init> audioFocusChangeListener: $audioFocusChangeListener" }
+        Timber.i("<init> audioFocusChangeListener: $audioFocusChangeListener")
     }
 
     override fun hasEarpiece(): Boolean {
@@ -47,40 +45,40 @@ internal class AudioManagerAdapterImpl(
         audioRequest = audioFocusRequest.buildRequest(audioFocusChangeListener)
         audioRequest?.let {
             val result = audioManager.requestAudioFocus(it)
-            logger.i { "[setAudioFocus] #new; completed: ${result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED}" }
+            Timber.i("[setAudioFocus] #new; completed: ${result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED}")
         }
         audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
     }
 
     override fun enableBluetoothSco(enable: Boolean) {
-        logger.i { "[enableBluetoothSco] enable: $enable" }
+        Timber.i("[enableBluetoothSco] enable: $enable")
         audioManager.run { if (enable) startBluetoothSco() else stopBluetoothSco() }
     }
 
     override fun enableSpeakerphone(enable: Boolean) {
-        logger.i { "[enableSpeakerphone] enable: $enable" }
+        Timber.i("[enableSpeakerphone] enable: $enable")
         audioManager.isSpeakerphoneOn = enable
     }
 
     override fun mute(mute: Boolean) {
-        logger.i { "[mute] mute: $mute" }
+        Timber.i("[mute] mute: $mute")
         audioManager.isMicrophoneMute = mute
     }
 
     override fun cacheAudioState() {
-        logger.i { "[cacheAudioState] no args" }
+        Timber.i("[cacheAudioState] no args")
         savedAudioMode = audioManager.mode
         savedIsMicrophoneMuted = audioManager.isMicrophoneMute
         savedSpeakerphoneEnabled = audioManager.isSpeakerphoneOn
     }
 
     override fun restoreAudioState() {
-        logger.i { "[cacheAudioState] no args" }
+        Timber.i("[cacheAudioState] no args")
         audioManager.mode = savedAudioMode
         mute(savedIsMicrophoneMuted)
         enableSpeakerphone(savedSpeakerphoneEnabled)
         audioRequest?.let {
-            logger.d { "[cacheAudioState] abandonAudioFocusRequest: $it" }
+            Timber.d("[cacheAudioState] abandonAudioFocusRequest: $it")
             audioManager.abandonAudioFocusRequest(it)
         }
     }

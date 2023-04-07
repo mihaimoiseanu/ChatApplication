@@ -13,7 +13,6 @@ import androidx.core.content.getSystemService
 import com.kroncoders.android.networking.webrtc.audio.AudioHandler
 import com.kroncoders.android.networking.webrtc.audio.AudioSwitchHandler
 import com.kroncoders.android.networking.webrtc.peer.StreamPeerConnection
-import com.kroncoders.android.networking.webrtc.peer.StreamPeerConnectionFactory
 import com.kroncoders.android.networking.webrtc.peer.StreamPeerType
 import com.kroncoders.android.networking.webrtc.utils.stringify
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,8 +32,7 @@ val LocalWebRtcSessionManager: ProvidableCompositionLocal<WebRtcSessionManager> 
     staticCompositionLocalOf { error("WebRtcSessionManager was not initialized") }
 
 class WebRtcSessionManagerImpl(
-    @ApplicationContext private val context: Context,
-    override val peerConnectionFactory: StreamPeerConnectionFactory
+    @ApplicationContext private val context: Context
 ) : WebRtcSessionManager {
 
     private val sessionManagerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -97,8 +95,10 @@ class WebRtcSessionManagerImpl(
     private val audioSource by lazy { peerConnectionFactory.makeAudioSource(audioConstraints) }
     private var peerConnection: StreamPeerConnection? = null
 
+    private var webRTCSession: WebRTCSession? = null
 
     override fun createSession() {
+        createWebRTCSession()
         setupAudio()
 
         localAudioTrack = peerConnectionFactory.makeAudioTrack(audioSource, "Audio${UUID.randomUUID()}")
@@ -115,7 +115,7 @@ class WebRtcSessionManagerImpl(
         peerConnection.setRemoteDescription(SessionDescription(SessionDescription.Type.OFFER, sdp))
         val answer = peerConnection.createAnswer().getOrThrow()
         peerConnection.setLocalDescription(answer).getOrThrow()
-        Timber.w("[SDP] send answer: ${answer.stringify()}")
+        Timber.d("[SDP] send answer: ${answer.stringify()}")
         return answer.description
     }
 
@@ -123,13 +123,13 @@ class WebRtcSessionManagerImpl(
         val peerConnection = peerConnection ?: throw IllegalStateException("PeerConnection is null")
         val offer = peerConnection.createOffer().getOrThrow()
         peerConnection.setLocalDescription(offer).getOrThrow()
-        Timber.w("[SDP] send offer: ${offer.stringify()}")
+        Timber.d("[SDP] send offer: ${offer.stringify()}")
         return offer.description
     }
 
     override suspend fun handleAnswer(sdp: String) {
         val peerConnection = peerConnection ?: throw IllegalStateException("PeerConnection is null")
-        Timber.w("[SDP] handle answer: $sdp")
+        Timber.d("[SDP] handle answer: $sdp")
         peerConnection.setRemoteDescription(SessionDescription(SessionDescription.Type.ANSWER, sdp))
     }
 
@@ -203,7 +203,7 @@ class WebRtcSessionManagerImpl(
                 if (track.kind() == MediaStreamTrack.VIDEO_TRACK_KIND) {
                     val videoTrack = track as VideoTrack
                     sessionManagerScope.launch {
-                        Timber.i("VideoTrack received")
+                        Timber.d("VideoTrack received")
                         _remoteVideoTrackStream.emit(videoTrack)
                     }
                 }
@@ -258,8 +258,12 @@ class WebRtcSessionManagerImpl(
         }
     }
 
+    private fun createWebRTCSession() {
+
+    }
+
     private fun setupAudio() {
-        Timber.w("[setupAudio] #sfu; no args")
+        Timber.d("[setupAudio] #sfu; no args")
         audioHandler.start()
         audioManager?.mode = AudioManager.MODE_IN_COMMUNICATION
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -269,7 +273,7 @@ class WebRtcSessionManagerImpl(
             val device = devices.firstOrNull { it.type == deviceType } ?: return
 
             val isCommunicationDeviceSet = audioManager?.setCommunicationDevice(device)
-            Timber.w("[setupAudio] #sfu; isCommunicationDeviceSet: $isCommunicationDeviceSet")
+            Timber.d("[setupAudio] #sfu; isCommunicationDeviceSet: $isCommunicationDeviceSet")
         }
     }
 }
