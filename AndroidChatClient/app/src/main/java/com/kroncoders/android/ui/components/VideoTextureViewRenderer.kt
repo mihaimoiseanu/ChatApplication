@@ -15,7 +15,7 @@ import java.util.concurrent.CountDownLatch
 /**
  * Custom [TextureView] used to render local/incoming videos on the screen.
  */
-open class VideoTextureViewRenderer @JvmOverloads constructor(
+class VideoTextureViewRenderer @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : TextureView(context, attrs), VideoSink, SurfaceTextureListener {
@@ -59,6 +59,10 @@ open class VideoTextureViewRenderer @JvmOverloads constructor(
      * The rotated [VideoFrame] rotation
      */
     private var frameRotation = 0
+
+    init {
+        surfaceTextureListener = this
+    }
 
     /**
      * Called when a new frame is received. Sends the frame to be rendered.

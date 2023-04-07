@@ -100,9 +100,10 @@ fun ConversationsListScreen(viewModel: ConversationsListViewModel = hiltViewMode
                                     fontSize = 16.sp
                                 )
 
+                                val messageToDisplay = conversation.lastMessage.takeIf { it.isNotBlank() } ?: "Start sending messages"
                                 Text(
                                     modifier = Modifier.padding(top = 2.dp),
-                                    text = conversation.lastMessage,
+                                    text = messageToDisplay,
                                     fontSize = 14.sp
                                 )
                             }

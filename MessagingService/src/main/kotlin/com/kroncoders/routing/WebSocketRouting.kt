@@ -12,7 +12,6 @@ fun Route.messagesWebSocketRouting() {
 
     val sessionService by inject<SessionService>()
 
-
     webSocket("/ws/{userId}") { // websocketSession
         val userId = call.parameters["userId"]?.toLong() ?: throw IllegalStateException("userId missing")
         try {

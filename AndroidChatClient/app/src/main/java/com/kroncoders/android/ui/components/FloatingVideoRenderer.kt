@@ -74,7 +74,8 @@ fun FloatingVideoRenderer(
             }
             .then(modifier)
             .padding(16.dp)
-            .onGloballyPositioned { videoSize = it.size }
+            .onGloballyPositioned { videoSize = it.size },
+        shape = RoundedCornerShape(16.dp)
     ) {
         VideoRenderer(
             modifier = Modifier

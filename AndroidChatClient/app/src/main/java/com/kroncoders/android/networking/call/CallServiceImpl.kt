@@ -83,6 +83,7 @@ class CallServiceImpl(
     }
 
     private suspend fun acceptCall(conversationId: Long) {
+        startConnection(conversationId)
         val callMessageJson = WebSocketCallMessage(
             userId = chatDataStore.userId.first(),
             conversationId = conversationId,
@@ -90,7 +91,6 @@ class CallServiceImpl(
         ).let { json.encodeToString(it) }
         val webSocketFrame = WebSocketFrame(WebSocketFrameType.CallMessage, callMessageJson)
         webSocketMessagingService.sendTextFrame(webSocketFrame)
-        startConnection(conversationId)
     }
 
     //region Internal call state
@@ -147,7 +147,6 @@ class CallServiceImpl(
     }
 
     private suspend fun handleInternalEndState(conversationId: Long) {
-        if (internalCallState.value !is InternalCallState.InCall) return
         val callMessageJson = WebSocketCallMessage(
             userId = chatDataStore.userId.first(),
             conversationId = conversationId,
@@ -155,9 +154,12 @@ class CallServiceImpl(
         ).let { json.encodeToString(it) }
         val webSocketFrame = WebSocketFrame(WebSocketFrameType.CallMessage, callMessageJson)
         webSocketMessagingService.sendTextFrame(webSocketFrame)
+
         _callState.emit(CallState.End)
         endConnection()
         _callState.emit(CallState.Inactive)
+
+        internalCallState.emit(InternalCallState.Inactive)
     }
     //endregion
 

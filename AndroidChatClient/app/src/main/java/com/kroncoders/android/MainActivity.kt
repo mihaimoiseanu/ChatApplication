@@ -1,5 +1,6 @@
 package com.kroncoders.android
 
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.core.view.WindowCompat
 import androidx.navigation.navOptions
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
+import com.kroncoders.android.networking.call.CallService
 import com.kroncoders.android.ui.ChatNavHost
 import com.kroncoders.android.ui.navigation.DirectionBack
 import com.kroncoders.android.ui.navigation.NavigationManager
@@ -23,9 +25,16 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var navigationManager: NavigationManager
 
+    //we need to inject it here to force it to be created
+    @Inject
+    lateinit var callService: CallService
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO), 0)
+
         setContent {
             AndroidChatClientTheme {
                 // A surface container using the 'background' color from the theme

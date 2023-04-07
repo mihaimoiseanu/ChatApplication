@@ -7,8 +7,6 @@ import org.webrtc.VideoTrack
 data class CallScreenModel(
     val userName: String = "",
     val state: CallScreenState = CallScreenState.Inactive,
-    val localStream: Flow<VideoTrack?> = emptyFlow(),
-    val remoteStream: Flow<VideoTrack?> = emptyFlow(),
     val isCameraEnabled: Boolean = true,
     val isMicrophoneEnabled: Boolean = true,
 )

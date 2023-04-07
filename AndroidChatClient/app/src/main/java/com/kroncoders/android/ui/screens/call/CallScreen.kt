@@ -25,14 +25,18 @@ fun CallScreen(viewModel: CallScreenViewModel = hiltViewModel()) {
     val screenModel by viewModel.callScreenModel.collectAsState()
 
     CompositionLocalProvider(LocalWebRtcSessionManager provides viewModel.sessionManager) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .systemBarsPadding()
+                .fillMaxSize()
+        ) {
 
             var parentSize: IntSize by remember { mutableStateOf(IntSize(0, 0)) }
 
-            val remoteVideoTrackState by screenModel.remoteStream.collectAsState(initial = null)
+            val remoteVideoTrackState by viewModel.remoteStream.collectAsState(initial = null)
             val remoteVideoTrack = remoteVideoTrackState
 
-            val localVideoTrackState by screenModel.localStream.collectAsState(initial = null)
+            val localVideoTrackState by viewModel.localStream.collectAsState(initial = null)
             val localVideoTrack = localVideoTrackState
 
             if (remoteVideoTrack != null) {
@@ -87,7 +91,7 @@ fun CallScreen(viewModel: CallScreenViewModel = hiltViewModel()) {
                         .fillMaxWidth(),
                     onAcceptCallClick = viewModel::acceptCall
                 )
-                CallScreenState.InCall -> InCallControls(
+                CallScreenState.InCall, CallScreenState.Connecting -> InCallControls(
                     modifier = Modifier
                         .padding(bottom = 40.dp)
                         .align(Alignment.BottomCenter)

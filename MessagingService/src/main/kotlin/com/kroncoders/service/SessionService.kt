@@ -60,11 +60,7 @@ class SessionService(
         //TODO check if the users are online
         val frameToSend =
             WebSocketFrame(WebSocketFrameType.CallMessage, webRTCMessageFrame).let { json.encodeToString(it) }
-        conversationUsers.forEach { userId ->
-            launch {
-                clients[userId]?.send(frameToSend)
-            }
-        }
+        conversationUsers.forEach { userId -> clients[userId]?.send(frameToSend) }
     }
 
     fun onSessionClose(userId: Long) {

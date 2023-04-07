@@ -17,7 +17,6 @@ import com.kroncoders.android.networking.webrtc.peer.StreamPeerConnectionFactory
 import com.kroncoders.android.networking.webrtc.peer.StreamPeerType
 import com.kroncoders.android.networking.webrtc.utils.stringify
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.getstream.log.taggedLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,6 +24,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import org.webrtc.*
+import timber.log.Timber
 import java.util.*
 
 private const val ICE_SEPARATOR = '$'
@@ -37,7 +37,6 @@ class WebRtcSessionManagerImpl(
     override val peerConnectionFactory: StreamPeerConnectionFactory
 ) : WebRtcSessionManager {
 
-    private val logger by taggedLogger("Call::LocalWebRtcSessionManager")
     private val sessionManagerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _iceCandidateStream: MutableSharedFlow<String> = MutableSharedFlow()
@@ -49,7 +48,7 @@ class WebRtcSessionManagerImpl(
 
     // used to send remote video track to the sender
     private val _remoteVideoTrackStream: MutableSharedFlow<VideoTrack?> = MutableSharedFlow()
-    override val remoteVideoTrackStream: MutableSharedFlow<VideoTrack?> = MutableSharedFlow()
+    override val remoteVideoTrackStream: MutableSharedFlow<VideoTrack?> = _remoteVideoTrackStream
 
     // declaring video constraints and setting OfferToReceiveVideo to true
     // this step is mandatory to create valid offer and answer
@@ -63,7 +62,6 @@ class WebRtcSessionManagerImpl(
     }
 
     // getting front camera
-    private val videoCapturer: VideoCapturer by lazy { buildCameraCapturer() }
     private val cameraManager by lazy { context.getSystemService<CameraManager>() }
     private val cameraEnumerator: Camera2Enumerator by lazy { Camera2Enumerator(context) }
 
@@ -79,18 +77,17 @@ class WebRtcSessionManagerImpl(
     // we need it to initialize video capturer
     private val surfaceTextureHelper = SurfaceTextureHelper.create("SurfaceTextureHelperThread", peerConnectionFactory.eglBaseContext)
 
+
+    private val videoCapturer: VideoCapturer by lazy { buildCameraCapturer() }
     private val videoSource by lazy {
         peerConnectionFactory.makeVideoSource(videoCapturer.isScreencast).apply {
             videoCapturer.initialize(surfaceTextureHelper, context, this.capturerObserver)
             videoCapturer.startCapture(resolution.width, resolution.height, 30)
         }
     }
-    private val localVideoTrack: VideoTrack by lazy {
-        peerConnectionFactory.makeVideoTrack(
-            source = videoSource,
-            trackId = "Video${UUID.randomUUID()}"
-        )
-    }
+
+    private var localAudioTrack: AudioTrack? = null
+    private var localVideoTrack: VideoTrack? = null
 
     /** Audio properties */
 
@@ -98,45 +95,46 @@ class WebRtcSessionManagerImpl(
     private val audioManager by lazy { context.getSystemService<AudioManager>() }
     private val audioConstraints: MediaConstraints by lazy { buildMediaConstraints() }
     private val audioSource by lazy { peerConnectionFactory.makeAudioSource(audioConstraints) }
-    private val localAudioTrack: AudioTrack by lazy { peerConnectionFactory.makeAudioTrack(audioSource, "Audio${UUID.randomUUID()}") }
+    private var peerConnection: StreamPeerConnection? = null
 
-    private var _peerConnection: StreamPeerConnection? = null
-    private val peerConnection: StreamPeerConnection
-        get() = _peerConnection ?: throw IllegalStateException("There is no connection")
 
     override fun createSession() {
         setupAudio()
-        _peerConnection = buildPeerConnection()
-        peerConnection.connection.addTrack(localVideoTrack)
-        peerConnection.connection.addTrack(localAudioTrack)
+
+        localAudioTrack = peerConnectionFactory.makeAudioTrack(audioSource, "Audio${UUID.randomUUID()}")
+        localVideoTrack = peerConnectionFactory.makeVideoTrack(source = videoSource, trackId = "Video${UUID.randomUUID()}")
+        peerConnection = buildPeerConnection().apply {
+            connection.addTrack(localVideoTrack)
+            connection.addTrack(localAudioTrack)
+        }
         sessionManagerScope.launch { _localVideoTrackStream.emit(localVideoTrack) }
     }
 
     override suspend fun getAnswerToOffer(sdp: String): String {
-        peerConnection.setRemoteDescription(
-            SessionDescription(SessionDescription.Type.OFFER, sdp)
-        )
+        val peerConnection = peerConnection ?: throw IllegalStateException("PeerConnection is null")
+        peerConnection.setRemoteDescription(SessionDescription(SessionDescription.Type.OFFER, sdp))
         val answer = peerConnection.createAnswer().getOrThrow()
         peerConnection.setLocalDescription(answer).getOrThrow()
-        logger.d { "[SDP] send answer: ${answer.stringify()}" }
+        Timber.w("[SDP] send answer: ${answer.stringify()}")
         return answer.description
     }
 
     override suspend fun getOffer(): String {
+        val peerConnection = peerConnection ?: throw IllegalStateException("PeerConnection is null")
         val offer = peerConnection.createOffer().getOrThrow()
         peerConnection.setLocalDescription(offer).getOrThrow()
-        logger.d { "[SDP] send offer: ${offer.stringify()}" }
+        Timber.w("[SDP] send offer: ${offer.stringify()}")
         return offer.description
     }
 
     override suspend fun handleAnswer(sdp: String) {
-        logger.d { "[SDP] handle answer: $sdp" }
-        peerConnection.setRemoteDescription(
-            SessionDescription(SessionDescription.Type.ANSWER, sdp)
-        )
+        val peerConnection = peerConnection ?: throw IllegalStateException("PeerConnection is null")
+        Timber.w("[SDP] handle answer: $sdp")
+        peerConnection.setRemoteDescription(SessionDescription(SessionDescription.Type.ANSWER, sdp))
     }
 
     override suspend fun handleIce(iceMessage: String) {
+        val peerConnection = peerConnection ?: throw IllegalStateException("PeerConnection is null")
         val iceArray = iceMessage.split(ICE_SEPARATOR)
         peerConnection.addIceCandidate(
             IceCandidate(
@@ -167,8 +165,11 @@ class WebRtcSessionManagerImpl(
         //dispose audio & video tracks
         remoteVideoTrackStream.replayCache.forEach { videoTrack -> videoTrack?.dispose() }
         localVideoTrackStream.replayCache.forEach { videoTrack -> videoTrack?.dispose() }
-        localAudioTrack.dispose()
-        localVideoTrack.dispose()
+        localAudioTrack?.dispose()
+        localVideoTrack?.dispose()
+
+        localAudioTrack = null
+        localVideoTrack = null
 
         sessionManagerScope.launch {
             _remoteVideoTrackStream.emit(null)
@@ -181,8 +182,8 @@ class WebRtcSessionManagerImpl(
         videoCapturer.dispose()
 
         //dispose the peer connection
-        peerConnection.disposeConnection()
-        _peerConnection = null
+        peerConnection?.disposeConnection()
+        peerConnection = null
     }
 
     private fun buildPeerConnection(): StreamPeerConnection {
@@ -201,7 +202,10 @@ class WebRtcSessionManagerImpl(
                 val track = rtpTransceiver?.receiver?.track() ?: return@makePeerConnection
                 if (track.kind() == MediaStreamTrack.VIDEO_TRACK_KIND) {
                     val videoTrack = track as VideoTrack
-                    sessionManagerScope.launch { _remoteVideoTrackStream.emit(videoTrack) }
+                    sessionManagerScope.launch {
+                        Timber.i("VideoTrack received")
+                        _remoteVideoTrackStream.emit(videoTrack)
+                    }
                 }
             }
         )
@@ -210,17 +214,15 @@ class WebRtcSessionManagerImpl(
     private fun buildCameraCapturer(): VideoCapturer {
         val manager = cameraManager ?: throw RuntimeException("CameraManager not initialized")
 
-        val ids = manager.cameraIdList
+        val cameraId = manager.cameraIdList
+            .firstOrNull { id ->
+                val characteristics = manager.getCameraCharacteristics(id)
+                val cameraLensFacing = characteristics.get(CameraCharacteristics.LENS_FACING)
+                cameraLensFacing == CameraMetadata.LENS_FACING_FRONT
+            }
+            ?: manager.cameraIdList.firstOrNull()
+            ?: ""
 
-        var cameraId = ids.firstOrNull { id ->
-            val characteristics = manager.getCameraCharacteristics(id)
-            val cameraLensFacing = characteristics.get(CameraCharacteristics.LENS_FACING)
-            cameraLensFacing == CameraMetadata.LENS_FACING_FRONT
-        } ?: ""
-
-        if (cameraId.isBlank() && ids.isNotEmpty()) {
-            cameraId = ids.first()
-        }
         return Camera2Capturer(context, cameraId, null)
     }
 
@@ -257,7 +259,7 @@ class WebRtcSessionManagerImpl(
     }
 
     private fun setupAudio() {
-        logger.d { "[setupAudio] #sfu; no args" }
+        Timber.w("[setupAudio] #sfu; no args")
         audioHandler.start()
         audioManager?.mode = AudioManager.MODE_IN_COMMUNICATION
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -267,7 +269,7 @@ class WebRtcSessionManagerImpl(
             val device = devices.firstOrNull { it.type == deviceType } ?: return
 
             val isCommunicationDeviceSet = audioManager?.setCommunicationDevice(device)
-            logger.d { "[setupAudio] #sfu; isCommunicationDeviceSet: $isCommunicationDeviceSet" }
+            Timber.w("[setupAudio] #sfu; isCommunicationDeviceSet: $isCommunicationDeviceSet")
         }
     }
 }
